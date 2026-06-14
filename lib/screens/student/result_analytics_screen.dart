@@ -77,7 +77,7 @@ class ResultAnalyticsScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       '${finalScore.toStringAsFixed(1)} / ${maxMarks.toStringAsFixed(0)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.black),
+                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
                     ),
                     const Text(
                       'Your Final Score',
