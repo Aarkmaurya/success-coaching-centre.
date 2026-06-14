@@ -35,18 +35,16 @@ jobs:
         cd app
         flutter create --platforms=android .
 
-    # 2. फायरबेस के लिए Android SDK 34 को ऑटो-अपडेट करना
-    - name: Force Android SDK 34 for Firebase
+    # 2. ग्रैडल और फायरबेस के लिए Android SDK 34 को जबरन (Force) सेट करना
+    - name: Force Android SDK 34 via local.properties
       run: |
-        cd app/android/app
-        # अगर build.gradle या build.gradle.kts में compileSdk 33 है तो उसे 34 कर दो
-        if [ -f "build.gradle" ]; then
-          sed -i 's/compileSdk 33/compileSdk 34/g' build.gradle
-          sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' build.gradle
-        fi
-        if [ -f "build.gradle.kts" ]; then
-          sed -i 's/compileSdk = 33/compileSdk = 34/g' build.gradle.kts
-          sed -i 's/compileSdk(33)/compileSdk(34)/g' build.gradle.kts
+        mkdir -p app/android
+        echo "flutter.compileSdkVersion=34" >> app/android/local.properties
+        echo "flutter.targetSdkVersion=34" >> app/android/local.properties
+        
+        # मुख्य एंड्रॉइड फोल्डर की प्रॉपर्टीज में भी डाल देते हैं बैकअप के लिए
+        if [ -d "app/android/app" ]; then
+          echo "flutter.compileSdkVersion=34" >> app/android/app/local.properties
         fi
 
     # 3. कस्टम ऐप आइकॉन जनरेट करना
@@ -74,7 +72,7 @@ jobs:
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 5. बिना किसी फाइल को एडिट किए सीधे कमांड से साइन करके APK बिल्ड करना
+    # 5. बिना किसी फाइल को मैन्युअली एडिट किए सीधे कमांड से साइन करके APK बिल्ड करना
     - name: Build Signed Release APK Direct
       run: |
         cd app
