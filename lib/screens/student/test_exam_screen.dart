@@ -284,7 +284,7 @@ class _TestExamScreenState extends State<TestExamScreen> {
                 ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // पिछला सवाल बटन
                   OutlinedButton(
