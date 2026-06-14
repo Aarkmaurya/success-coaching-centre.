@@ -1,4 +1,4 @@
-name: Flutter Force-Repair & Signed Release Build
+name: Flutter Perfect Standard Release Build
 
 on:
   push:
@@ -24,31 +24,30 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 1. पुरानी फाइलों को बैकअप लेकर बिल्कुल फ्रेश एंड्रॉइड प्रोजेक्ट खड़ा करना
-    - name: Force Recreate Full Flutter Project
+    # 1. बाहर वाले lib फोल्डर को सीधे app फोल्डर के अंदर सही जगह मर्ज करना
+    - name: Merge Folders and Recreate Android
       run: |
-        # कोडिंग फाइलों का बैकअप लेना
-        mkdir -p backup_lib backup_assets
-        cp -r app/lib/* backup_lib/ 2>/dev/null || true
-        cp -r app/assets/* backup_assets/ 2>/dev/null || true
+        # अगर बाहर कोई lib फोल्डर है, तो उसे ऐप फोल्डर के अंदर ले जाना
+        if [ -d "lib" ]; then
+          rm -rf app/lib
+          mv lib app/
+        fi
         
-        # पुराना आधा-अधूरा फोल्डर साफ करना
-        rm -rf app
-        
-        # बिल्कुल नया और कंप्लीट फ्लटर प्रोजेक्ट बनाना (जिससे build.gradle पक्का बनेगी)
-        flutter create --project-name=success_coaching_centre app
-        
-        # अपनी असली कोडिंग फाइल्स और लोगो को वापस सही जगह डालना
-        rm -rf app/lib/*
-        cp -r backup_lib/* app/lib/
-        mkdir -p app/assets
-        cp -r backup_assets/* app/assets/ 2>/dev/null || true
+        cd app
+        # गायब ग्रैडल और एंड्रॉइड फाइलों को जनरेट करना
+        flutter create --platforms=android .
 
-    # 2. आइकॉन के लिए अलग से कॉन्फ़िगरेशन फाइल बनाना और आइकॉन जनरेट करना
+    # 2. कस्टम ऐप आइकॉन जनरेट करना
     - name: Generate App Icons
       run: |
         cd app
         flutter pub add dev:flutter_launcher_icons:"^0.13.1"
+        
+        # अगर लोगो बाहर था, तो उसे भी ढूँढकर ऐप एसेट्स में डालना
+        mkdir -p assets
+        if [ -f "../assets/app_icon.png" ]; then
+          cp ../assets/app_icon.png assets/app_icon.png
+        fi
         
         cat <<EOF > flutter_launcher_icons.yaml
         flutter_launcher_icons:
@@ -96,13 +95,18 @@ jobs:
         
         sed -i '/release {/a \            signingConfig signingConfigs.release' "$TARGET_GRADLE"
 
-    # 6. app फोल्डर के अंदर जाकर फाइनल Signed Release APK बिल्ड करना
+    # 6. फाइनल Signed Release APK बिल्ड करना
     - name: Build Signed Release APK
       run: |
         cd app
         flutter build apk --release
 
     # 7. तैयार रिलीज APK को डाउनलोड के लिए अपलोड करना
+    - name: Upload Signed Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: SUSSES-Coaching-Release-APK
+        path: app/build/app/outputs/flutter-apk/app-release.apk
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
