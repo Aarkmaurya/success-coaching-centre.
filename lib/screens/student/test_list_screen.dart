@@ -159,7 +159,7 @@ class _TestListScreenState extends State<TestListScreen> {
                             
                             // टेस्ट के नियम और जानकारी ग्रिड
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.between,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 _buildInfoChip(Icons.help_outline_rounded, '${test['totalQuestions']} Qs', theme),
                                 _buildInfoChip(Icons.stars_rounded, '${test['totalMarks']} Marks', theme),
