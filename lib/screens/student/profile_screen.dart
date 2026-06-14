@@ -55,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
                       child: Text(
                         'AM',
-                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.black, color: theme.colorScheme.primary),
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: theme.colorScheme.primary),
                       ),
                     ),
                     const SizedBox(height: 16),
