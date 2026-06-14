@@ -30,10 +30,11 @@ jobs:
         cd app
         flutter create --platforms=android .
 
-    # 2. कस्टम ऐप आइकॉन जनरेट करना (app/assets/app_icon.png से)
+    # 2. कस्टम ऐप आइकॉन जनरेट करना (Force Add Package के साथ)
     - name: Generate App Icons
       run: |
         cd app
+        flutter pub add dev:flutter_launcher_icons:"^0.13.1"
         flutter pub get
         flutter pub run flutter_launcher_icons
 
@@ -52,7 +53,7 @@ jobs:
         storeFile=release-keystore.jks
         EOF
 
-    # 5. एंड्रॉइड के build.gradle में साइनिंग कॉन्फ़िगरेशन जोड़ करना
+    # 5. एंड्रॉइड के build.gradle में साइनिंग कॉन्फ़िगरेशन जोड़ना
     - name: Inject Signing Config into Gradle
       run: |
         sed -i '/buildTypes {/i \
@@ -84,4 +85,3 @@ jobs:
       with:
         name: SUSSES-Coaching-Release-APK
         path: app/build/app/outputs/flutter-apk/app-release.apk
-        
