@@ -214,7 +214,7 @@ class StudentIdCardScreen extends StatelessWidget {
   }
   Widget _buildIdRow(String label, String value, ThemeData theme) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.between,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
