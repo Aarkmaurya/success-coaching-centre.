@@ -1,4 +1,4 @@
-name: Flutter Auto-Repair & Signed Release Build
+name: Flutter Force-Repair & Signed Release Build
 
 on:
   push:
@@ -24,11 +24,25 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 1. गायब एंड्रॉइड फोल्डर और ग्रैडल फाइलों को app फोल्डर के अंदर जनरेट करना
-    - name: Recreate Android Project Files
+    # 1. पुरानी फाइलों को बैकअप लेकर बिल्कुल फ्रेश एंड्रॉइड प्रोजेक्ट खड़ा करना
+    - name: Force Recreate Full Flutter Project
       run: |
-        cd app
-        flutter create --platforms=android .
+        # कोडिंग फाइलों का बैकअप लेना
+        mkdir -p backup_lib backup_assets
+        cp -r app/lib/* backup_lib/ 2>/dev/null || true
+        cp -r app/assets/* backup_assets/ 2>/dev/null || true
+        
+        # पुराना आधा-अधूरा फोल्डर साफ करना
+        rm -rf app
+        
+        # बिल्कुल नया और कंप्लीट फ्लटर प्रोजेक्ट बनाना (जिससे build.gradle पक्का बनेगी)
+        flutter create --project-name=success_coaching_centre app
+        
+        # अपनी असली कोडिंग फाइल्स और लोगो को वापस सही जगह डालना
+        rm -rf app/lib/*
+        cp -r backup_lib/* app/lib/
+        mkdir -p app/assets
+        cp -r backup_assets/* app/assets/ 2>/dev/null || true
 
     # 2. आइकॉन के लिए अलग से कॉन्फ़िगरेशन फाइल बनाना और आइकॉन जनरेट करना
     - name: Generate App Icons
@@ -45,12 +59,12 @@ jobs:
         flutter pub get
         flutter pub run flutter_launcher_icons
 
-    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को सही एंड्रॉइड फोल्डर में तैयार करना
+    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
     - name: Decode Keystore File
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 4. ग्रैडल को साइनिंग कीज़ और कीस्टोर का सही पाथ देना
+    # 4. ग्रैडल को साइनिंग कीज़ की जानकारी देना
     - name: Configure Android Signing
       run: |
         cat <<EOF >> app/android/key.properties
@@ -60,33 +74,27 @@ jobs:
         storeFile=release-keystore.jks
         EOF
 
-    # 5. एंड्रॉइड के build.gradle में साइनिंग कॉन्फ़िगरेशन को सुरक्षित तरीके से इंजेक्ट करना
+    # 5. एंड्रॉइड के build.gradle में साइनिंग कॉन्फ़िगरेशन जोड़ना
     - name: Inject Signing Config into Gradle
       run: |
-        # फाइल का सही पाथ ढूंढकर उसमें साइनिंग सेटिंग जोड़ना
         TARGET_GRADLE="app/android/app/build.gradle"
         
-        if [ -f "$TARGET_GRADLE" ]; then
-          sed -i '/buildTypes {/i \
-          signingConfigs {\n\
-              release {\n\
-                  var keystoreProperties = new Properties()\n\
-                  var keystorePropertiesFile = rootProject.file("key.properties")\n\
-                  if (keystorePropertiesFile.exists()) {\n\
-                      keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n\
-                  }\n\
-                  keyAlias keystoreProperties["keyAlias"]\n\
-                  keyPassword keystoreProperties["keyPassword"]\n\
-                  storeFile rootProject.file(keystoreProperties["storeFile"])\n\
-                  storePassword keystoreProperties["storePassword"]\n\
-              }\n\
-          }\n' "$TARGET_GRADLE"
-          
-          sed -i '/release {/a \            signingConfig signingConfigs.release' "$TARGET_GRADLE"
-        else
-          echo "Error: build.gradle not found at $TARGET_GRADLE"
-          exit 1
-        fi
+        sed -i '/buildTypes {/i \
+        signingConfigs {\n\
+            release {\n\
+                var keystoreProperties = new Properties()\n\
+                var keystorePropertiesFile = rootProject.file("key.properties")\n\
+                if (keystorePropertiesFile.exists()) {\n\
+                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n\
+                }\n\
+                keyAlias keystoreProperties["keyAlias"]\n\
+                keyPassword keystoreProperties["keyPassword"]\n\
+                storeFile rootProject.file(keystoreProperties["storeFile"])\n\
+                storePassword keystoreProperties["storePassword"]\n\
+            }\n\
+        }\n' "$TARGET_GRADLE"
+        
+        sed -i '/release {/a \            signingConfig signingConfigs.release' "$TARGET_GRADLE"
 
     # 6. app फोल्डर के अंदर जाकर फाइनल Signed Release APK बिल्ड करना
     - name: Build Signed Release APK
