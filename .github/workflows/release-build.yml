@@ -24,71 +24,17 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 1. बाहर वाले lib फोल्डर को सीधे app फोल्डर के अंदर सही जगह डालना
-    - name: Merge Folders and Recreate Android
-      run: |
-        if [ -d "lib" ]; then
-          rm -rf app/lib
-          mv lib app/
-        fi
-        
-        cd app
-        flutter create --platforms=android .
-
-    # 2. सभी ग्रैडल फाइलों के अंदर घुसकर सीधे compileSdk को 36 (या 34) पर फोर्स करना
-    - name: Deep Force Android SDK 36 in Gradle Files
-      run: |
-        cd app/android
-        
-        # ऐप लेवल की build.gradle में बदलाव
-        if [ -f "app/build.gradle" ]; then
-          sed -i 's/compileSdk 33/compileSdk 36/g' app/build.gradle
-          sed -i 's/compileSdkVersion 33/compileSdkVersion 36/g' app/build.gradle
-          sed -i 's/targetSdk 33/targetSdk 36/g' app/build.gradle
-          sed -i 's/targetSdkVersion 33/targetSdkVersion 36/g' app/build.gradle
-        fi
-        
-        # अगर कोटलिन वाली build.gradle.kts बनी हो तो उसमें भी बदलाव
-        if [ -f "app/build.gradle.kts" ]; then
-          sed -i 's/compileSdk = 33/compileSdk = 36/g' app/build.gradle.kts
-          sed -i 's/targetSdk = 33/targetSdk = 36/g' app/build.gradle.kts
-        fi
-
-    # 3. कस्टम ऐप आइकॉन जनरेट करना
-    - name: Generate App Icons
+    # अब हमें कोई फाइल री-क्रिएट नहीं करनी, सीधे ऐप फोल्डर में जाकर बिल्ड करना है
+    - name: Build Signed Release APK
       run: |
         cd app
-        flutter pub add dev:flutter_launcher_icons:"^0.13.1"
-        
-        mkdir -p assets
-        if [ -f "../assets/app_icon.png" ]; then
-          cp ../assets/app_icon.png assets/app_icon.png
-        fi
-        
-        cat <<EOF > flutter_launcher_icons.yaml
-        flutter_launcher_icons:
-          android: "launcher_icon"
-          image_path: "assets/app_icon.png"
-        EOF
-        
         flutter pub get
-        flutter pub run flutter_launcher_icons
-
-    # 4. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
-    - name: Decode Keystore File
-      run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
-
-    # 5. बिना किसी फाइल को मैन्युअली एडिट किए सीधे कमांड से साइन करके APK बिल्ड करना
-    - name: Build Signed Release APK Direct
-      run: |
-        cd app
         flutter build apk --release \
+          --no-tree-shake-icons \
           --dart-define=STORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
           --dart-define=KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
           --dart-define=KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
 
-    # 6. तैयार रिलीज APK को अपलोड करना
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
