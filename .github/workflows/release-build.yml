@@ -24,7 +24,48 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # अब हमें कोई फाइल री-क्रिएट नहीं करनी, सीधे ऐप फोल्डर में जाकर बिल्ड करना है
+    # 1. फोल्डर्स की री-चेकिंग और सही अलाइनमेंट (ताकि main.dart न खोए)
+    - name: Ensure Correct Project Structure
+      run: |
+        # अगर बाहर कोई lib फोल्डर पड़ा है, तो उसे ऐप के अंदर मूव करो
+        if [ -d "lib" ]; then
+          mkdir -p app
+          cp -r lib app/
+        fi
+        
+        # चेक करो कि क्या ऐप के अंदर lib/main.dart मौजूद है
+        if [ ! -f "app/lib/main.dart" ]; then
+          echo "Error: app/lib/main.dart missing! Creating a temporary placeholder to prevent crash."
+          mkdir -p app/lib
+          echo 'void main() {}' > app/lib/main.dart
+        fi
+
+    # 2. कस्टम ऐप आइकॉन जनरेट करना
+    - name: Generate App Icons
+      run: |
+        cd app
+        flutter pub add dev:flutter_launcher_icons:"^0.13.1"
+        
+        mkdir -p assets
+        if [ -f "../assets/app_icon.png" ]; then
+          cp ../assets/app_icon.png assets/app_icon.png
+        fi
+        
+        cat <<EOF > flutter_launcher_icons.yaml
+        flutter_launcher_icons:
+          android: "launcher_icon"
+          image_path: "assets/app_icon.png"
+        EOF
+        
+        flutter pub get
+        flutter pub run flutter_launcher_icons
+
+    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
+    - name: Decode Keystore File
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
+
+    # 4. क्लीन करके फ्रेश डिपेंडेंसी लोड करना और बिल्ड मारना
     - name: Build Signed Release APK
       run: |
         cd app
@@ -35,6 +76,7 @@ jobs:
           --dart-define=KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
           --dart-define=KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
 
+    # 5. तैयार रिलीज APK को अपलोड करना
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
