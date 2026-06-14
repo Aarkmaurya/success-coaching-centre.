@@ -92,7 +92,7 @@ class StudentIdCardScreen extends StatelessWidget {
                             backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                             child: Text(
                               'AM',
-                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.black, color: theme.colorScheme.primary),
+                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: theme.colorScheme.primary),
                             ),
                           ),
                           const SizedBox(height: 16),
