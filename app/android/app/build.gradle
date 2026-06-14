@@ -5,8 +5,8 @@ plugins {
 }
 
 android {
-    namespace "com.example.success_coaching_centre"
-    compileSdk 34 // <-- यहाँ हमने इसे हमेशा के लिए 34 कर दिया!
+    namespace "com.aark.success_coaching" // <-- तुम्हारा पैकेज नेम यहाँ सेट हो गया
+    compileSdk 34 
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -18,16 +18,16 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.success_coaching_centre"
+        applicationId "com.aark.success_coaching" // <-- यहाँ भी बिल्कुल सेम पैकेज नेम आ गया
         minSdk 21
-        targetSdk 34 // <-- यहाँ भी 34 फिक्स
+        targetSdk 34 
         versionCode 1
         versionName "1.0.0"
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug // या तुम्हारा कस्टम साइनिंग
+            signingConfig signingConfigs.debug 
             minifyEnabled false
             shrinkResources false
         }
@@ -37,4 +37,3 @@ android {
 flutter {
     source '../..'
 }
-
