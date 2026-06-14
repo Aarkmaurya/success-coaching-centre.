@@ -123,7 +123,7 @@ class _TestListScreenState extends State<TestListScreen> {
                           children: [
                             // कोर्स टैग और टेस्ट नाम
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.between,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
