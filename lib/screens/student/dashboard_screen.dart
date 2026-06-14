@@ -182,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 // 4. हालिया सूचना बोर्ड (Announcements)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.between,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       'Latest Announcements',
