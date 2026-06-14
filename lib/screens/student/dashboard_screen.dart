@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 // 1. कोचिंग और छात्र का नाम (Header)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.between,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
