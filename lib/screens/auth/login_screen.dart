@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // फॉरगॉट पासवर्ड टेक्स्ट
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           TextButton(
                             onPressed: () {},
