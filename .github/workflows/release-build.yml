@@ -35,16 +35,23 @@ jobs:
         cd app
         flutter create --platforms=android .
 
-    # 2. ग्रैडल और फायरबेस के लिए Android SDK 34 को जबरन (Force) सेट करना
-    - name: Force Android SDK 34 via local.properties
+    # 2. सभी ग्रैडल फाइलों के अंदर घुसकर सीधे compileSdk को 36 (या 34) पर फोर्स करना
+    - name: Deep Force Android SDK 36 in Gradle Files
       run: |
-        mkdir -p app/android
-        echo "flutter.compileSdkVersion=34" >> app/android/local.properties
-        echo "flutter.targetSdkVersion=34" >> app/android/local.properties
+        cd app/android
         
-        # मुख्य एंड्रॉइड फोल्डर की प्रॉपर्टीज में भी डाल देते हैं बैकअप के लिए
-        if [ -d "app/android/app" ]; then
-          echo "flutter.compileSdkVersion=34" >> app/android/app/local.properties
+        # ऐप लेवल की build.gradle में बदलाव
+        if [ -f "app/build.gradle" ]; then
+          sed -i 's/compileSdk 33/compileSdk 36/g' app/build.gradle
+          sed -i 's/compileSdkVersion 33/compileSdkVersion 36/g' app/build.gradle
+          sed -i 's/targetSdk 33/targetSdk 36/g' app/build.gradle
+          sed -i 's/targetSdkVersion 33/targetSdkVersion 36/g' app/build.gradle
+        fi
+        
+        # अगर कोटलिन वाली build.gradle.kts बनी हो तो उसमें भी बदलाव
+        if [ -f "app/build.gradle.kts" ]; then
+          sed -i 's/compileSdk = 33/compileSdk = 36/g' app/build.gradle.kts
+          sed -i 's/targetSdk = 33/targetSdk = 36/g' app/build.gradle.kts
         fi
 
     # 3. कस्टम ऐप आइकॉन जनरेट करना
