@@ -68,7 +68,7 @@ class StudentIdCardScreen extends StatelessWidget {
                               children: const [
                                 Text(
                                   'SUCCESS COACHING CENTRE',
-                                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.black, letterSpacing: 0.5),
+                                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                                 ),
                                 Text(
                                   'NVS • SAINIK SCHOOL • CHS',
