@@ -35,7 +35,21 @@ jobs:
         cd app
         flutter create --platforms=android .
 
-    # 2. कस्टम ऐप आइकॉन जनरेट करना
+    # 2. फायरबेस के लिए Android SDK 34 को ऑटो-अपडेट करना
+    - name: Force Android SDK 34 for Firebase
+      run: |
+        cd app/android/app
+        # अगर build.gradle या build.gradle.kts में compileSdk 33 है तो उसे 34 कर दो
+        if [ -f "build.gradle" ]; then
+          sed -i 's/compileSdk 33/compileSdk 34/g' build.gradle
+          sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' build.gradle
+        fi
+        if [ -f "build.gradle.kts" ]; then
+          sed -i 's/compileSdk = 33/compileSdk = 34/g' build.gradle.kts
+          sed -i 's/compileSdk(33)/compileSdk(34)/g' build.gradle.kts
+        fi
+
+    # 3. कस्टम ऐप आइकॉन जनरेट करना
     - name: Generate App Icons
       run: |
         cd app
@@ -55,12 +69,12 @@ jobs:
         flutter pub get
         flutter pub run flutter_launcher_icons
 
-    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
+    # 4. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
     - name: Decode Keystore File
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 4. बिना किसी फाइल को एडिट किए सीधे कमांड से साइन करके APK बिल्ड करना
+    # 5. बिना किसी फाइल को एडिट किए सीधे कमांड से साइन करके APK बिल्ड करना
     - name: Build Signed Release APK Direct
       run: |
         cd app
@@ -69,7 +83,7 @@ jobs:
           --dart-define=KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
           --dart-define=KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
 
-    # 5. तैयार रिलीज APK को अपलोड करना
+    # 6. तैयार रिलीज APK को अपलोड करना
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
