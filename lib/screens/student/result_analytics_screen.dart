@@ -240,7 +240,7 @@ class ResultAnalyticsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.between,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
             Text('$value / $total', style: TextStyle(fontWeight: FontWeight.bold, color: color)),
