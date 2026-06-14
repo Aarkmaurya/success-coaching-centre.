@@ -204,7 +204,7 @@ class _TestExamScreenState extends State<TestExamScreen> {
               color: theme.colorScheme.primary.withOpacity(0.05),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Question ${_currentQuestionIndex + 1} of ${_mockQuestions.length}',
