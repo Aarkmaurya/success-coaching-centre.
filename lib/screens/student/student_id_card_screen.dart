@@ -240,7 +240,7 @@ class StudentIdCardScreen extends StatelessWidget {
             const SizedBox(height: 16),
             const Text(
               'Aark Maurya',
-              style: TextStyle(fontWeight: FontWeight.black, fontSize: 20),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
             ),
             Text(
               'IT Student & Developer',
