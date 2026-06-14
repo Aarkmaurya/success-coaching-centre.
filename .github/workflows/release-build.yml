@@ -1,0 +1,87 @@
+name: Flutter Auto-Repair & Signed Release Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        cache: true
+
+    # 1. गायब एंड्रॉइड फोल्डर और ग्रैडल फाइलों को app फोल्डर के अंदर जनरेट करना
+    - name: Recreate Android Project Files
+      run: |
+        cd app
+        flutter create --platforms=android .
+
+    # 2. कस्टम ऐप आइकॉन जनरेट करना (app/assets/app_icon.png से)
+    - name: Generate App Icons
+      run: |
+        cd app
+        flutter pub get
+        flutter pub run flutter_launcher_icons
+
+    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को app/android/app/ में तैयार करना
+    - name: Decode Keystore File
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
+
+    # 4. ग्रैडल को साइनिंग कीज़ की जानकारी देना
+    - name: Configure Android Signing
+      run: |
+        cat <<EOF >> app/android/key.properties
+        storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+        keyPassword=${{ secrets.KEY_PASSWORD }}
+        keyAlias=${{ secrets.KEY_ALIAS }}
+        storeFile=release-keystore.jks
+        EOF
+
+    # 5. एंड्रॉइड के build.gradle में साइनिंग कॉन्फ़िगरेशन जोड़ करना
+    - name: Inject Signing Config into Gradle
+      run: |
+        sed -i '/buildTypes {/i \
+        signingConfigs {\n\
+            release {\n\
+                var keystoreProperties = new Properties()\n\
+                var keystorePropertiesFile = rootProject.file("key.properties")\n\
+                if (keystorePropertiesFile.exists()) {\n\
+                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n\
+                }\n\
+                keyAlias keystoreProperties["keyAlias"]\n\
+                keyPassword keystoreProperties["keyPassword"]\n\
+                storeFile rootProject.file("app/" + keystoreProperties["storeFile"])\n\
+                storePassword keystoreProperties["storePassword"]\n\
+            }\n\
+        }\n' app/android/app/build.gradle
+        
+        sed -i '/release {/a \            signingConfig signingConfigs.release' app/android/app/build.gradle
+
+    # 6. app फोल्डर के अंदर जाकर फाइनल Signed Release APK बिल्ड करना
+    - name: Build Signed Release APK
+      run: |
+        cd app
+        flutter build apk --release
+
+    # 7. तैयार रिलीज APK को डाउनलोड के लिए अपलोड करना
+    - name: Upload Signed Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: SUSSES-Coaching-Release-APK
+        path: app/build/app/outputs/flutter-apk/app-release.apk
+        
