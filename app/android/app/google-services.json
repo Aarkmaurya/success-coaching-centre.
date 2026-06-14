@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "435553036405",
+    "project_id": "success-coaching-centre-5edcd",
+    "storage_bucket": "success-coaching-centre-5edcd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:435553036405:android:d61f44314264ac2965303c",
+        "android_client_info": {
+          "package_name": "com.aark.success_coaching"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmko7vKNcnlZAvA5gGHAmGhOetca4apPo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
