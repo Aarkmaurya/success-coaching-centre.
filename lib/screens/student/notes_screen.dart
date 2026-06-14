@@ -153,7 +153,7 @@ class _NotesScreenState extends State<NotesScreen> {
             const SizedBox(height: 8),
             Text(
               'Admin has not uploaded any items in this category yet. When data is uploaded, it will appear right here!',
-              textAlign.Center,
+              TextAlign.center,
               style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, height: 1.4),
             ),
           ],
