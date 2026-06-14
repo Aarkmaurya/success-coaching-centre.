@@ -24,23 +24,26 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 1. फोल्डर्स की री-चेकिंग और सही अलाइनमेंट (ताकि main.dart न खोए)
-    - name: Ensure Correct Project Structure
+    # 1. फोल्डर्स को मर्ज करना और एंड्रॉइड का पूरा ढांचा री-क्रिएट करना
+    - name: Merge Folders and Recreate Android Structure
       run: |
-        # अगर बाहर कोई lib फोल्डर पड़ा है, तो उसे ऐप के अंदर मूव करो
         if [ -d "lib" ]; then
           mkdir -p app
           cp -r lib app/
         fi
         
-        # चेक करो कि क्या ऐप के अंदर lib/main.dart मौजूद है
-        if [ ! -f "app/lib/main.dart" ]; then
-          echo "Error: app/lib/main.dart missing! Creating a temporary placeholder to prevent crash."
-          mkdir -p app/lib
-          echo 'void main() {}' > app/lib/main.dart
-        fi
+        cd app
+        # यह कमांड बिना तुम्हारी gradle फाइल को नुकसान पहुंचाए बाकी का पूरा ढांचा (AndroidManifest, आदि) बना देगी
+        flutter create --platforms=android .
 
-    # 2. कस्टम ऐप आइकॉन जनरेट करना
+    # 2. ब्रह्मास्त्र: री-क्रिएट होने के बाद वापस compileSdk 34 फोर्स करना
+    - name: Force Android SDK 34 via local.properties
+      run: |
+        mkdir -p app/android
+        echo "flutter.compileSdkVersion=34" >> app/android/local.properties
+        echo "flutter.targetSdkVersion=34" >> app/android/local.properties
+
+    # 3. कस्टम ऐप आइकॉन जनरेट करना (अब इसे AndroidManifest मिल जाएगी)
     - name: Generate App Icons
       run: |
         cd app
@@ -60,12 +63,12 @@ jobs:
         flutter pub get
         flutter pub run flutter_launcher_icons
 
-    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
+    # 4. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
     - name: Decode Keystore File
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 4. क्लीन करके फ्रेश डिपेंडेंसी लोड करना और बिल्ड मारना
+    # 5. फाइनल एपीके बिल्ड करना
     - name: Build Signed Release APK
       run: |
         cd app
@@ -76,7 +79,7 @@ jobs:
           --dart-define=KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
           --dart-define=KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
 
-    # 5. तैयार रिलीज APK को अपलोड करना
+    # 6. तैयार रिलीज APK को अपलोड करना
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
