@@ -24,90 +24,22 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 1. फोल्डर्स को मर्ज करना और एंड्रॉइड का फ्रेश ढांचा तैयार करना
-    - name: Merge Folders and Recreate Android Structure
+    # 1. बाहर वाले lib फोल्डर को सीधे app फोल्डर के अंदर सेट करना
+    - name: Merge Folders Correctly
       run: |
         if [ -d "lib" ]; then
           mkdir -p app
           cp -r lib app/
         fi
-        
-        cd app
-        flutter create --platforms=android .
 
-    # 2. ब्रह्मास्त्र: रूट ग्रैडल में सब-प्रोजेक्ट्स के लिए SDK 36 फोर्स करना (ताकि फायरबेस एरर न दे)
-    - name: Deep Force SDK 36 on All Subprojects (Firebase Fix)
+    # 2. local.properties में गिटहब के एंड्रॉइड SDK और फ्लटर का पाथ देना
+    - name: Setup local.properties
       run: |
-        cd app/android
-        
-        # अगर गिटहब ने ऐप लेवल पर .kts फाइल बनाई है तो उसे डिलीट करो ताकि क्लैश न हो
-        if [ -f "app/build.gradle.kts" ]; then
-          rm -f app/build.gradle.kts
-        fi
-
-        # रूट लेवल की build.gradle के नीचे सब-प्रोजेक्ट्स को ओवरराइड करने का कोड जोड़ना
-        cat << 'EOF' >> build.gradle
-
-        subprojects {
-            afterEvaluate { project ->
-                if (project.hasProperty('android')) {
-                    project.android {
-                        compileSdk 36
-                        defaultConfig {
-                            targetSdk 36
-                        }
-                    }
-                }
-            }
-        }
-        EOF
-
-        # ऐप लेवल की build.gradle को एकदम फ्रेश और सही कॉन्फ़िगरेशन के साथ लिखना
-        cat <<EOF > app/build.gradle
-        plugins {
-            id "com.android.application"
-            id "kotlin-android"
-            id "dev.flutter.flutter-gradle-plugin"
-        }
-
-        android {
-            namespace "com.aark.success_coaching"
-            compileSdk 36
-
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
-
-            kotlinOptions {
-                jvmTarget = '17'
-            }
-
-            defaultConfig {
-                applicationId "com.aark.success_coaching"
-                minSdk 21
-                targetSdk 36
-                versionCode 1
-                versionName "1.0.0"
-            }
-
-            buildTypes {
-                release {
-                    signingConfig signingConfigs.debug
-                    minifyEnabled false
-                    shrinkResources false
-                }
-            }
-        }
-
-        flutter {
-            source '../..'
-        }
-        EOF
-
-        # local.properties को भी अप-टू-डेट कर देते हैं
-        echo "flutter.compileSdkVersion=36" >> local.properties
-        echo "flutter.targetSdkVersion=36" >> local.properties
+        mkdir -p app/android
+        echo "sdk.dir=/usr/local/lib/android/sdk" > app/android/local.properties
+        echo "flutter.sdk=/opt/hostedtoolcache/flutter/stable-ubuntu-latest/flutter" >> app/android/local.properties
+        echo "flutter.compileSdkVersion=36" >> app/android/local.properties
+        echo "flutter.targetSdkVersion=36" >> app/android/local.properties
 
     # 3. कस्टम ऐप आइकॉन जनरेट करना
     - name: Generate App Icons
@@ -134,7 +66,7 @@ jobs:
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 5. फाइनल एपीके बिल्ड करना
+    # 5. फाइनल एपीके बिल्ड कमांड
     - name: Build Signed Release APK
       run: |
         cd app
