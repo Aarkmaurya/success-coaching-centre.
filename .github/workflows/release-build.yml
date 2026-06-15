@@ -32,27 +32,103 @@ jobs:
           cp -r lib app/
         fi
 
-    # 2. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
+    # 2. गिटहब के सर्वर्स को धोखा देना - ग्रैडल फाइल को पूरी तरह ओवरराइड करना
+    - name: Ultimate Gradle Setup (Firebase Fix)
+      run: |
+        mkdir -p app/android/app
+        
+        # अगर कोई भी .kts फाइल बनी है तो उसे डिलीट करो
+        rm -f app/android/app/build.gradle.kts
+        rm -f app/android/build.gradle.kts
+
+        # रूट लेवल की settings.gradle को एकदम सिंपल करना
+        cat <<EOF > app/android/settings.gradle
+        include ':app'
+        EOF
+
+        # रूट लेवल की build.gradle लिखना जिसमें जादुई फ़ोर्स ब्लॉक है
+        cat << 'EOF' > app/android/build.gradle
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        rootProject.buildDir = '../build'
+        subprojects {
+            project.buildDir = "${rootProject.buildDir}/${project.name}"
+            project.evaluationDependsOn(':app')
+        }
+        // यह ब्लॉक फायरबेस सहित हर एक प्लगइन को जबरदस्ती 36 पर चलाएगा
+        subprojects {
+            afterEvaluate { project ->
+                if (project.hasProperty('android')) {
+                    project.android {
+                        compileSdk 36
+                        defaultConfig {
+                            targetSdk 36
+                        }
+                    }
+                }
+            }
+        }
+        tasks.register("clean", Delete) {
+            delete rootProject.buildDir
+        }
+        EOF
+
+        # ऐप लेवल (app/android/app/build.gradle) को पुराने सॉलिड तरीके से लिखना
+        cat <<EOF > app/android/app/build.gradle
+        apply plugin: 'com.android.application'
+        apply plugin: 'kotlin-android'
+
+        android {
+            namespace "com.aark.success_coaching"
+            compileSdk 36
+
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+
+            defaultConfig {
+                applicationId "com.aark.success_coaching"
+                minSdk 21
+                targetSdk 36
+                versionCode 1
+                versionName "1.0.0"
+            }
+
+            buildTypes {
+                release {
+                    signingConfig signingConfigs.debug
+                }
+            }
+        }
+        EOF
+
+        # local.properties को अप-टू-डेट करना
+        echo "sdk.dir=/usr/local/lib/android/sdk" > app/android/local.properties
+        echo "flutter.compileSdkVersion=36" >> app/android/local.properties
+        echo "flutter.targetSdkVersion=36" >> app/android/local.properties
+
+    # 3. गिटहब के Secrets से कीस्टोर फाइल (.jks) को तैयार करना
     - name: Decode Keystore File
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 3. ब्रह्मांड का सबसे अचूक तरीका: सीधे कमांड से SDK 36 और पैकेज नेम फोर्स करना
-    - name: Build Signed Release APK via Direct CLI Injection
+    # 4. फाइनल एपीके बिल्ड करना
+    - name: Build Signed Release APK
       run: |
         cd app
         flutter pub get
         flutter build apk --release \
           --no-tree-shake-icons \
-          --project-option="android.namespace=com.aark.success_coaching" \
-          --project-option="android.applicationId=com.aark.success_coaching" \
-          --project-option="android.compileSdk=36" \
-          --project-option="android.targetSdk=36" \
           --dart-define=STORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
           --dart-define=KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
           --dart-define=KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
 
-    # 4. तैयार रिलीज APK को अपलोड करना
+    # 5. तैयार रिलीज APK को अपलोड करना
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
