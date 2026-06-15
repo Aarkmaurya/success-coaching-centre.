@@ -24,7 +24,7 @@ jobs:
         channel: 'stable'
         cache: true
 
-    # 1. फोल्डर्स को मर्ज करना और एंड्रॉइड का पूरा ढांचा री-क्रिएट करना
+    # 1. फोल्डर्स को मर्ज करना और एंड्रॉइड का ढांचा तैयार करना
     - name: Merge Folders and Recreate Android Structure
       run: |
         if [ -d "lib" ]; then
@@ -33,17 +33,66 @@ jobs:
         fi
         
         cd app
-        # यह कमांड बिना तुम्हारी gradle फाइल को नुकसान पहुंचाए बाकी का पूरा ढांचा (AndroidManifest, आदि) बना देगी
         flutter create --platforms=android .
 
-    # 2. ब्रह्मास्त्र: री-क्रिएट होने के बाद वापस compileSdk 34 फोर्स करना
-    - name: Force Android SDK 34 via local.properties
+    # 2. ब्रह्मास्त्र: दोनों build.gradle फाइलों के क्लैश को खत्म करना और SDK 36 फोर्स करना
+    - name: Clean Gradle Clash and Force SDK 36
       run: |
-        mkdir -p app/android
-        echo "flutter.compileSdkVersion=34" >> app/android/local.properties
-        echo "flutter.targetSdkVersion=34" >> app/android/local.properties
+        cd app/android/app
+        
+        # अगर गिटहब ने .kts फाइल बना दी है तो उसे तुरंत डिलीट करो ताकि हमारी फाइल इग्नोर न हो
+        if [ -f "build.gradle.kts" ]; then
+          rm -f build.gradle.kts
+        fi
+        
+        # अब एक नई और परफेक्ट build.gradle सीधे यहीं राइट कर देते हैं तुम्हारे पैकेज नेम के साथ
+        cat <<EOF > build.gradle
+        plugins {
+            id "com.android.application"
+            id "kotlin-android"
+            id "dev.flutter.flutter-gradle-plugin"
+        }
 
-    # 3. कस्टम ऐप आइकॉन जनरेट करना (अब इसे AndroidManifest मिल जाएगी)
+        android {
+            namespace "com.aark.success_coaching"
+            compileSdk 36
+
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+
+            kotlinOptions {
+                jvmTarget = '17'
+            }
+
+            defaultConfig {
+                applicationId "com.aark.success_coaching"
+                minSdk 21
+                targetSdk 36
+                versionCode 1
+                versionName "1.0.0"
+            }
+
+            buildTypes {
+                release {
+                    signingConfig signingConfigs.debug
+                    minifyEnabled false
+                    shrinkResources false
+                }
+            }
+        }
+
+        flutter {
+            source '../..'
+        }
+        EOF
+
+        # local.properties में भी बैकअप के लिए 36 लिख देते हैं
+        echo "flutter.compileSdkVersion=36" >> ../local.properties
+        echo "flutter.targetSdkVersion=36" >> ../local.properties
+
+    # 3. कस्टम ऐप आइकॉन जनरेट करना
     - name: Generate App Icons
       run: |
         cd app
