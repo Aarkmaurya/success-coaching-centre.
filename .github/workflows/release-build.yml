@@ -22,25 +22,25 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
-        cache: true
+        cache: false
 
-    # 1. बाहर वाले lib फोल्डर को सीधे app फोल्डर के अंदर मर्ज करना
-    - name: Merge Folders Correctly
+    # 1. आपके स्क्रीनशॉट के हिसाब से फाइलों को एकदम सही जगह सेट करना
+    # बाहर वाले lib फोल्डर को सीधे app/ के अंदर कॉपी करना ताकि प्रोजेक्ट पूरा हो सके
+    - name: Correctly Sync Direct Library Folders
       run: |
         if [ -d "lib" ]; then
-          mkdir -p app
+          rm -rf app/lib
           cp -r lib app/
         fi
 
-    # 2. ग्रैडल फाइल्स को बिल्कुल नए v2 एम्बेडिंग सिंटैक्स पर राइट करना
-    - name: Set Up Modern Gradle (V2 Embedding & Firebase Fix)
+    # 2. एंड्रॉइड एम्बेडिंग और ग्रैडल फाइलों को फ्रेश मॉडर्न v2 पर ओवरराइड करना
+    - name: Hard Reset Modern Gradle Configurations
       run: |
-        mkdir -p app/android/app
-        
+        # अगर कोई .kts फाइल है तो उसे हटाओ ताकि वो क्लैश न करे
         rm -f app/android/app/build.gradle.kts
         rm -f app/android/build.gradle.kts
 
-        # रूट लेवल की settings.gradle (इसमें हम प्लगइन्स डिक्लेयर कर रहे हैं ताकि v1 एरर न आए)
+        # रूट लेवल की settings.gradle को बिल्कुल नया v2 प्लगइन सिंटैक्स देना
         cat <<EOF > app/android/settings.gradle
         pluginManagement {
             def flutterSdkPath = {
@@ -70,7 +70,7 @@ jobs:
         include ':app'
         EOF
 
-        # रूट लेवल की build.gradle (सभी सब-प्रोजेक्ट्स को SDK 36 पर फोर्स करना)
+        # रूट लेवल की build.gradle में फायरबेस डिपेंडेंसीज के लिए SDK 36 फ़ोर्स ब्लॉक लगाना
         cat << 'EOF' > app/android/build.gradle
         allprojects {
             repositories {
@@ -100,7 +100,7 @@ jobs:
         }
         EOF
 
-        # ऐप लेवल की build.gradle (Modern Plugins Block ताकि v1 एम्बेडिंग एरर खत्म हो जाए)
+        # ऐप लेवल (app/android/app/build.gradle) को पूरी तरह से मॉडर्न प्लगइन्स पर लॉक करना
         cat <<EOF > app/android/app/build.gradle
         plugins {
             id "com.android.application"
@@ -139,7 +139,7 @@ jobs:
         }
         EOF
 
-        # local.properties सेट करना
+        # local.properties को सही पाथ के साथ सेट करना
         echo "sdk.dir=/usr/local/lib/android/sdk" > app/android/local.properties
         echo "flutter.compileSdkVersion=36" >> app/android/local.properties
         echo "flutter.targetSdkVersion=36" >> app/android/local.properties
@@ -149,7 +149,7 @@ jobs:
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/android/app/release-keystore.jks
 
-    # 4. फाइनल एपीके बिल्ड करना
+    # 4. फाइनल एपीके बिल्ड करना (सही डायरेक्टरी के अंदर जाकर)
     - name: Build Signed Release APK
       run: |
         cd app
