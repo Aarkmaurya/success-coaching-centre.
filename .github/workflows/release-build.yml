@@ -32,21 +32,45 @@ jobs:
           cp -r lib app/
         fi
 
-    # 2. गिटहब के सर्वर्स को धोखा देना - ग्रैडल फाइल को पूरी तरह ओवरराइड करना
-    - name: Ultimate Gradle Setup (Firebase Fix)
+    # 2. ग्रैडल फाइल्स को बिल्कुल नए v2 एम्बेडिंग सिंटैक्स पर राइट करना
+    - name: Set Up Modern Gradle (V2 Embedding & Firebase Fix)
       run: |
         mkdir -p app/android/app
         
-        # अगर कोई भी .kts फाइल बनी है तो उसे डिलीट करो
         rm -f app/android/app/build.gradle.kts
         rm -f app/android/build.gradle.kts
 
-        # रूट लेवल की settings.gradle को एकदम सिंपल करना
+        # रूट लेवल की settings.gradle (इसमें हम प्लगइन्स डिक्लेयर कर रहे हैं ताकि v1 एरर न आए)
         cat <<EOF > app/android/settings.gradle
+        pluginManagement {
+            def flutterSdkPath = {
+                def properties = new Properties()
+                def propertiesFile = new File(settingsDir, "local.properties")
+                if (propertiesFile.exists()) {
+                    propertiesFile.withReader("UTF-8") { reader -> properties.load(reader) }
+                }
+                def sdkPath = properties.getProperty("flutter.sdk")
+                if (sdkPath == null) {
+                    sdkPath = System.getenv("FLUTTER_ROOT")
+                }
+                return sdkPath
+            }()
+            includeBuild("\$flutterSdkPath/packages/flutter_tools/gradle")
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        plugins {
+            id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+            id "com.android.application" version "8.1.0" apply false
+            id "org.jetbrains.kotlin.android" version "1.8.22" apply false
+        }
         include ':app'
         EOF
 
-        # रूट लेवल की build.gradle लिखना जिसमें जादुई फ़ोर्स ब्लॉक है
+        # रूट लेवल की build.gradle (सभी सब-प्रोजेक्ट्स को SDK 36 पर फोर्स करना)
         cat << 'EOF' > app/android/build.gradle
         allprojects {
             repositories {
@@ -59,7 +83,6 @@ jobs:
             project.buildDir = "${rootProject.buildDir}/${project.name}"
             project.evaluationDependsOn(':app')
         }
-        // यह ब्लॉक फायरबेस सहित हर एक प्लगइन को जबरदस्ती 36 पर चलाएगा
         subprojects {
             afterEvaluate { project ->
                 if (project.hasProperty('android')) {
@@ -77,10 +100,13 @@ jobs:
         }
         EOF
 
-        # ऐप लेवल (app/android/app/build.gradle) को पुराने सॉलिड तरीके से लिखना
+        # ऐप लेवल की build.gradle (Modern Plugins Block ताकि v1 एम्बेडिंग एरर खत्म हो जाए)
         cat <<EOF > app/android/app/build.gradle
-        apply plugin: 'com.android.application'
-        apply plugin: 'kotlin-android'
+        plugins {
+            id "com.android.application"
+            id "kotlin-android"
+            id "dev.flutter.flutter-gradle-plugin"
+        }
 
         android {
             namespace "com.aark.success_coaching"
@@ -89,6 +115,10 @@ jobs:
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
+            }
+
+            kotlinOptions {
+                jvmTarget = '17'
             }
 
             defaultConfig {
@@ -102,12 +132,14 @@ jobs:
             buildTypes {
                 release {
                     signingConfig signingConfigs.debug
+                    minifyEnabled false
+                    shrinkResources false
                 }
             }
         }
         EOF
 
-        # local.properties को अप-टू-डेट करना
+        # local.properties सेट करना
         echo "sdk.dir=/usr/local/lib/android/sdk" > app/android/local.properties
         echo "flutter.compileSdkVersion=36" >> app/android/local.properties
         echo "flutter.targetSdkVersion=36" >> app/android/local.properties
